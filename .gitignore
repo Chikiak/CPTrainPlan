@@ -24,3 +24,6 @@ venv/
 *.aux
 *.log
 *.out
+
+# OpenCode local config
+.opencode/
