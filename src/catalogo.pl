@@ -5,6 +5,7 @@
 % Por problema se usan: contestId, index, name, rating (opcional), tags.
 
 :- use_module(library(json)).
+:- use_module(library(lists)).
 
 % Carga el catálogo desde Archivo y devuelve el diccionario raíz del JSON.
 % Si el archivo no existe, escribe un error y termina con código 1.
@@ -81,3 +82,23 @@ find_problema(Catalogo, Id, P) :-
     problemas_lista(Catalogo, Lista),
     member(P, Lista),
     problema_id(P, Id).
+
+% Límite de tiempo por rating con cobertura de huecos de la tabla.
+% Si el rating cae en alguna fila de limite_tiempo/3 se usa ese límite;
+% si cae en un hueco entre filas se usa el límite del tramo inmediatamente
+% inferior (mayor rating_min que no exceda el rating), de modo que
+% limite_por_rating/2 nunca falle para un rating razonable.
+limite_por_rating(Rating, Minutos) :-
+    (   limite_tiempo(Min, Max, Minutos),
+        (   Max = inf -> Min =< Rating
+        ;   Min =< Rating, Rating =< Max
+        )
+    ;   findall(Min0-Minutos0,
+                (   limite_tiempo(Min0, _Max0, Minutos0),
+                    Min0 =< Rating
+                ),
+                Tramos),
+        Tramos \== [],
+        keysort(Tramos, Ordenados),
+        last(Ordenados, _-Minutos)
+    ).
