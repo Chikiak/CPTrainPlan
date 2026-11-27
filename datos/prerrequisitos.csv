@@ -1,0 +1,24 @@
+# Borrador editable de prerrequisitos entre temas (tema, prerrequisito).
+tema,prerrequisito
+binary search,sortings
+two pointers,sortings
+ternary search,binary search
+dp,brute force
+bitmasks,brute force
+meet-in-the-middle,brute force
+graphs,dfs and similar
+trees,dfs and similar
+shortest paths,graphs
+flows,graphs
+2-sat,graphs
+graph matchings,flows
+dsu,data structures
+number theory,math
+combinatorics,math
+probabilities,combinatorics
+geometry,math
+matrices,math
+chinese remainder theorem,number theory
+fft,number theory
+hashing,strings
+string suffix structures,strings

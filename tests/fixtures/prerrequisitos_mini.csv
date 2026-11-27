@@ -1,0 +1,5 @@
+# Cadena de tres temas y un tema suelto.
+tema,prerrequisito
+a,require_b
+require_b,require_c
+suelto,
