@@ -1,0 +1,17 @@
+{
+  "status": "OK",
+  "result": {
+    "problems": [
+      {"contestId": 1850, "index": "A", "name": "To My Critics", "rating": 800, "tags": ["implementation", "math"]},
+      {"contestId": 1850, "index": "B1", "name": "Almost All Multiples", "rating": 1000, "tags": ["implementation", "math"]},
+      {"contestId": 1850, "index": "B2", "name": "Almost All Multiples (Hard)", "rating": 1300, "tags": ["implementation", "math"]},
+      {"contestId": 1850, "index": "C", "name": "Another Array Problem", "rating": 1400, "tags": ["dp", "greedy"]},
+      {"contestId": 1850, "index": "D", "name": "Balanced Round", "rating": 1600, "tags": ["dp", "data structures"]},
+      {"contestId": 1850, "index": "E", "name": "Yet Another Counting", "rating": 1700, "tags": ["combinatorics", "dp"]},
+      {"contestId": 1850, "index": "F", "name": "Functional Graph", "rating": 1900, "tags": ["graphs", "dp"]},
+      {"contestId": 1850, "index": "G", "name": "Grand Finale", "rating": 2000, "tags": ["dp", "trees"]},
+      {"contestId": 1850, "index": "H", "name": "Unrated Problem One", "tags": ["implementation"]},
+      {"contestId": 1850, "index": "I", "name": "Unrated Problem Two", "tags": ["math", "greedy"]}
+    ]
+  }
+}

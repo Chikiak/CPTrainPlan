@@ -1,0 +1,29 @@
+# Local configuration files (project-specific)
+*.local
+
+# Common exclusions
+.DS_Store
+*.log
+*.env
+*.env.*
+
+# Dependencies
+node_modules/
+venv/
+.env.local/
+
+# Build artifacts
+*.build/
+*.production/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.aux
+*.log
+*.out
+
+# OpenCode local config
+.opencode/
