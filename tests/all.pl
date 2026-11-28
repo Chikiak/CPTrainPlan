@@ -22,5 +22,7 @@ dummy.
 :- consult('tests/test_temas.pl').
 :- consult('tests/test_candidatos.pl').
 :- consult('tests/test_plan.pl').
+:- consult('tests/test_salida.pl').
+:- consult('tests/test_e2e.pl').
 
 run_tests :- plunit:run_tests.
