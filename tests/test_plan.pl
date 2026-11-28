@@ -33,6 +33,7 @@ gen_probs(N, Max, Out) :-
     ),
     N1 is N + 1,
     gen_probs(N1, Max, Out).
+gen_probs(_N, Max, _) :- _N > Max, !.
 
 % ---- AC1: carga no excede disponibilidad ----
 test(carga_no_excede_disponibilidad) :-
@@ -78,7 +79,8 @@ test(ningun_problema_se_repite) :-
     maplist(ids_de_dia, PlanDias, TodasIds),
     append(TodasIds, Todos),
     length(Todos, Total),
-    length(unique(Todos), Total).
+    list_to_set(Todos, SinDups),
+    length(SinDups, Total).
 ids_de_dia(dia(_D, _F, _Dis, _C, Items), Ids) :-
     maplist(id_de_item, Items, Ids).
 id_de_item(candidato(Id, _R, _M, _T, _G), Id).
@@ -100,7 +102,7 @@ test(solo_asigna_candidatos_validos) :-
     maplist(ids_de_dia, PlanDias, TodasIds),
     append(TodasIds, Todos),
     problemas_candidatos(Cat, Intentos, [], Pares, [], 1200, CandidatosValidos),
-    maplist(id_de, CandidatosValidos, CandidatoIdsValidos),
+    maplist(id_de_item, CandidatosValidos, CandidatoIdsValidos),
     maplist(member(CandidatoIdsValidos), Todos).
 
 % ---- AC5: ningun candidato sin asignar cabe en el hueco de algun dia ----
@@ -170,29 +172,24 @@ test(error_falta_disponibilidad_de_un_dia) :-
     ).
 
 % ---- AC10: escala con catalogo sintetico de 3000 problemas ----
-% test(plan_14_dias_catalogo_sintetico) :-
-%     catch(
-%         (   Generado = '/tmp/catalogo_3000_plan.json',
-%             open(Generado, write, Out),
-%             format(Out, '{"status":"OK","result":{"problems":[', []),
-%             gen_probs(1, 3000, Out),
-%             format(Out, ']}}', []),
-%             close(Out),
-%             cargar_catalogo(Generado, CatSintetico),
-%             Pares = [(dp-math), (graphs-dp), (greedy-math)],
-%             leer_historial('tests/fixtures/historial_candidatos.csv', Intentos),
-%             Resueltos = [],
-%             Disponibles = [30, 120, 0, 60, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
-%             Fechas = ['2026-11-23','2026-11-24','2026-11-25','2026-11-26','2026-11-27','2026-11-28','2026-11-29','2026-11-30','2026-12-01','2026-12-02','2026-12-03','2026-12-04','2026-12-05','2026-12-06'],
-%             problemas_candidatos(CatSintetico, Intentos, Resueltos, Pares, [], 1200, Candidatos),
-%             length(Candidatos, NCand),
-%             NCand =< 200,
-%             construir_plan(14, Fechas, Disponibles, Candidatos, PlanDias),
-%             delete_file(Generado)
-%         ),
-%         Error,
-%         format('AC10 ERROR: ~w~n', [Error]),
-%         assertion(false)
-%     ).
+test(plan_14_dias_catalogo_sintetico) :-
+    Generado = '/tmp/catalogo_3000_plan.json',
+    open(Generado, write, Out),
+    format(Out, '{"status":"OK","result":{"problems":[', []),
+    gen_probs(1, 3000, Out),
+    format(Out, ']}}', []),
+    close(Out),
+    cargar_catalogo(Generado, CatSintetico),
+    Pares = [(dp-math), (graphs-dp), (greedy-math)],
+    leer_historial('tests/fixtures/historial_candidatos.csv', Intentos),
+    Resueltos = [],
+    Disponibles = [30, 120, 0, 60, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
+    Fechas = ['2026-11-23','2026-11-24','2026-11-25','2026-11-26','2026-11-27','2026-11-28','2026-11-29','2026-11-30','2026-12-01','2026-12-02','2026-12-03','2026-12-04','2026-12-05','2026-12-06'],
+    problemas_candidatos(CatSintetico, Intentos, Resueltos, Pares, [], 1200, Candidatos),
+    length(Candidatos, NCand),
+    NCand =< 200,
+    construir_plan(14, Fechas, Disponibles, Candidatos, PlanDias),
+    maplist(carga_ok_con_disp, PlanDias, Disponibles),
+    delete_file(Generado).
 
 :- end_tests(plan).

@@ -1,13 +1,14 @@
 % Pruebas unitarias del issue F0-06 (salida máquina del plan).
 :- use_module(library(plunit)).
 :- use_module(library(json)).
+:- consult('src/salida.pl').
 :- begin_tests(salida).
 
 % Datos de prueba inline.
 setup_salida(Hoy, Nivel, Dias, PlanDias) :-
     cargar_catalogo('tests/fixtures/catalogo_plan.json', Cat),
     Pares = [(dp-math), (graphs-dp), (greedy-math)],
-    Intentos = [intento(2004A, '2026-11-20', 15, 'no', 'si', 1)],
+    Intentos = [intento('2004A', '2026-11-20', 15, 'no', 'si', 1)],
     Resueltos = [],
     Disponibles = [30, 120, 0, 60, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
     Fechas = ['2026-11-23','2026-11-24','2026-11-25','2026-11-26','2026-11-27','2026-11-28','2026-11-29','2026-11-30','2026-12-01','2026-12-02','2026-12-03','2026-12-04','2026-12-05','2026-12-06'],
