@@ -330,7 +330,6 @@ cmd_plan(Opts) :-
     (   SalidaStr0 = none ->
         true
     ;
-        atom_number(SalidaStr0, Salida),
         escribir_plan(Hoy, Nivel, Dias, PlanDias, Candidatos, Cat, Estados, SalidaStr0)
     ),
     halt(0).
@@ -375,8 +374,11 @@ motivo_de_item(Cat, Estados, Id, Motivo) :-
     atomic_list_concat(Pares, ", ", ParesStr),
     atom_concat("Temas: ", ParesStr, Motivo).
 
-estado_de_tema(Estados, Tema, estado(Tema, Estado)) :-
-    member(estado(Tema, Estado), Estados).
+estado_de_tema(Estados, Tema, EstadoTerm) :-
+    (   member(estado(Tema, Estado), Estados) -> EstadoTerm = estado(Tema, Estado)
+    ;   EstadoTerm = estado(Tema, '')
+    ),
+    !.  % nunca falla: evita que maplist(imprimir_dia,...) se buclee
 
 pares_tema_estado([], []).
 pares_tema_estado([estado(Tema, Estado)|Rest], [Par|RestPares]) :-

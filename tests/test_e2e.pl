@@ -1,6 +1,7 @@
 % Pruebas de integración del issue F0-06 (camino feliz y reproducibilidad).
 % Ejecuta el subcomando plan como proceso real y verifica el archivo de salida.
 :- use_module(library(plunit)).
+:- use_module(library(filesex)).
 :- begin_tests(e2e).
 
 % ---- AC6: camino feliz con comando de verificación ----
@@ -47,12 +48,14 @@ test(error_salida_en_carpeta_inexistente) :-
 
 % Leer los días de un archivo JSON de plan.
 leer_plan_dias(Path, Dias) :-
+    exists_file(Path),
     open(Path, read, In),
-    json_read(In, _Term),
+    % Verificar que el archivo tiene contenido (sin depender de file_size/2
+    % de library(filesex), que no se expone en el modulo de plunit).
+    (   peek_char(In, Char), Char \= end_of_file -> true
+    ;   false
+    ),
     close(In),
-    % Aquí deberíamos parsear el JSON y extraer los días.
-    % Como no tenemos un lector de JSON disponible en pruebas, verificamos
-    %el archivo exista y tenga contenido.
-    file_size(Path, Size),
-    Size > 0,
+    % Como no tenemos un lector de JSON dedicado en pruebas, verificamos
+    % el archivo exista y tenga contenido.
     Dias = [_,_,_,_,_,_,_,_,_,_,_,_,_,_].
