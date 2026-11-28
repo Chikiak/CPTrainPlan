@@ -13,7 +13,7 @@
 dummy.
 
 % Carga los módulos de catálogo, límites, historial, fallo, prerrequisitos,
-% temas, candidatos, disponibilidad y plan una sola vez al iniciar.
+% temas, candidatos, disponibilidad, plan y salida una sola vez al iniciar.
 :- initialization((
     project_root(Root),
     atom_concat(Root, "/", Pre),
@@ -26,6 +26,7 @@ dummy.
     atom_concat(Pre, "src/candidatos.pl", CanSrc),
     atom_concat(Pre, "src/disponibilidad.pl", DispSrc),
     atom_concat(Pre, "src/plan.pl", PlanSrc),
+    atom_concat(Pre, "src/salida.pl", SalSrc),
     consult(CatSrc),
     consult(LimSrc),
     consult(HisSrc),
@@ -34,7 +35,8 @@ dummy.
     consult(TemSrc),
     consult(CanSrc),
     consult(DispSrc),
-    consult(PlanSrc)
+    consult(PlanSrc),
+    consult(SalSrc)
 )).
 
 :- initialization(main).
@@ -287,6 +289,7 @@ cmd_plan(Opts) :-
     opt_default(disponibilidad, KV, 'datos/disponibilidad.csv', DispPath0),
     opt_default(parametros, KV, 'config/parametros.pl', ParamPath0),
     opt_default(dias, KV, none, DiasStr0),
+    opt_default(salida, KV, none, SalidaStr0),
     resolve(CatPath0, CatPath),
     resolve(PrePath0, PrePath),
     resolve(HisPath0, HisPath),
@@ -324,6 +327,12 @@ cmd_plan(Opts) :-
     problemas_candidatos(Cat, Intentos, Resueltos, Pares, Estados, Nivel, Candidatos),
     construir_plan(Dias, Fechas, Disponibles, Candidatos, PlanDias),
     maplist(imprimir_dia(Cat, Estados), PlanDias),
+    (   SalidaStr0 = none ->
+        true
+    ;
+        atom_number(SalidaStr0, Salida),
+        escribir_plan(Hoy, Nivel, Dias, PlanDias, Candidatos, Cat, Estados, SalidaStr0)
+    ),
     halt(0).
 
 obtener_disponibles([], _, []).
