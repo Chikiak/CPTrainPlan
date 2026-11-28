@@ -12,7 +12,7 @@ test(camino_feliz_e2e) :-
         assertion(false)
     ),
     % Verificar que el archivo existe y tiene 14 días
-    (   file_exists_file('/tmp/plan_salida_test.json') -> true
+    (   exists_file('/tmp/plan_salida_test.json') -> true
     ;   assertion(false)
     ),
     cargar_catalogo('tests/fixtures/catalogo_plan.json', _Cat),
@@ -29,8 +29,8 @@ test(salida_identica_en_dos_ejecuciones) :-
     Code1 =:= 0,
     shell('swipl src/main.pl plan --catalogo tests/fixtures/catalogo_plan.json --prerrequisitos tests/fixtures/prerrequisitos_plan.csv --historial tests/fixtures/historial_plan.csv --disponibilidad tests/fixtures/disponibilidad_plan.csv --nivel 1200 --hoy 2026-11-23 --dias 14 --salida /tmp/plan_salida_test2.json', Code2),
     Code2 =:= 0,
-    (   file_exists_file('/tmp/plan_salida_test1.json'),
-        file_exists_file('/tmp/plan_salida_test2.json') ->
+    (   exists_file('/tmp/plan_salida_test1.json'),
+        exists_file('/tmp/plan_salida_test2.json') ->
         true
     ;   assertion(false)
     ),
@@ -52,7 +52,7 @@ leer_plan_dias(Path, Dias) :-
     close(In),
     % Aquí deberíamos parsear el JSON y extraer los días.
     % Como no tenemos un lector de JSON disponible en pruebas, verificamos
-    #que el archivo exista y tenga contenido.
+    %el archivo exista y tenga contenido.
     file_size(Path, Size),
     Size > 0,
     Dias = [_,_,_,_,_,_,_,_,_,_,_,_,_,_].
