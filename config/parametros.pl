@@ -34,3 +34,7 @@ banda_nivel_max(200).
 tope_por_tema(5).
 % tope_total_candidatos: total máximo de candidatos conservados, primeros por cercanía.
 tope_total_candidatos(200).
+
+% F0-05: plan de N días.
+% dias_por_defecto: número de días del plan cuando --dias no se indica.
+dias_por_defecto(14).

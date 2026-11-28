@@ -1,0 +1,8 @@
+# Prerrequisitos para el plan de prueba. math es tema base; dp requiere math;
+# graphs requiere dp (indirectamente math). Si math no tiene intentos, graphs queda bloqueado.
+tema,prerrequisito
+dp,math
+graphs,dp
+greedy,math
+data structures,math
+combinatorics,math
