@@ -8,11 +8,12 @@
 
 :- use_module(library(lists)).
 :- use_module(library(json)).
+:- use_module(library(clpfd)).
 
 dummy.
 
-% Carga los módulos de catálogo, límites, historial, fallo, prerrequisitos
-% y temas una sola vez al iniciar.
+% Carga los módulos de catálogo, límites, historial, fallo, prerrequisitos,
+% temas, candidatos, disponibilidad y plan una sola vez al iniciar.
 :- initialization((
     project_root(Root),
     atom_concat(Root, "/", Pre),
@@ -23,20 +24,24 @@ dummy.
     atom_concat(Pre, "src/prerrequisitos.pl", PreSrc),
     atom_concat(Pre, "src/temas.pl", TemSrc),
     atom_concat(Pre, "src/candidatos.pl", CanSrc),
+    atom_concat(Pre, "src/disponibilidad.pl", DispSrc),
+    atom_concat(Pre, "src/plan.pl", PlanSrc),
     consult(CatSrc),
     consult(LimSrc),
     consult(HisSrc),
     consult(FalSrc),
     consult(PreSrc),
     consult(TemSrc),
-    consult(CanSrc)
+    consult(CanSrc),
+    consult(DispSrc),
+    consult(PlanSrc)
 )).
 
 :- initialization(main).
 
 main :-
     current_prolog_flag(argv, Argv),
-    dispatch(Argv).
+    catch(dispatch(Argv), E, (print_message(error, E), throw(E))).
 
 dispatch([]) :-
     format(user_error, 'error: se espera un subcomando: catalogo~n'),
@@ -46,6 +51,7 @@ dispatch([Sub|Opts]) :-
     ;   Sub = intentos -> cmd_intentos(Opts)
     ;   Sub = temas -> cmd_temas(Opts)
     ;   Sub = candidatos -> cmd_candidatos(Opts)
+    ;   Sub = plan -> cmd_plan(Opts)
     ;   format(user_error, 'error: subcomando desconocido: ~s~n', [Sub]),
         halt(1)
     ).
@@ -72,6 +78,10 @@ parse_opts([ '--parametros', V|R], [parametros=V|KV]) :- parse_opts(R, KV).
 parse_opts([ '--historial', V|R], [historial=V|KV]) :- parse_opts(R, KV).
 parse_opts([ '--prerrequisitos', V|R], [prerrequisitos=V|KV]) :- parse_opts(R, KV).
 parse_opts([ '--nivel', V|R], [nivel=V|KV]) :- parse_opts(R, KV).
+parse_opts([ '--hoy', V|R], [hoy=V|KV]) :- parse_opts(R, KV).
+parse_opts([ '--dias', V|R], [dias=V|KV]) :- parse_opts(R, KV).
+parse_opts([ '--disponibilidad', V|R], [disponibilidad=V|KV]) :- parse_opts(R, KV).
+parse_opts([ '--salida', V|R], [salida=V|KV]) :- parse_opts(R, KV).
 parse_opts([_|R], KV) :- parse_opts(R, KV). % ignora opciones desconocidas
 
 opt_default(Key, KV, Def, Value) :-
@@ -251,4 +261,118 @@ imprimir_candidato(candidato(Id, Rating, Minutos, Temas, _Grupo)) :-
 temas_string([], "").
 temas_string(Temas, S) :-
     atomic_list_concat(Temas, ",", S).
+
+% Subcomando `plan`: genera un plan de N días válido con restricciones CLP(FD).
+% Opciones: --catalogo, --prerrequisitos, --historial, --resueltos,
+%           --disponibilidad, --parametros, --nivel (obligatorio),
+%           --hoy (obligatorio), --dias (opcional, usa dias_por_defecto).
+cmd_plan(Opts) :-
+    parse_opts(Opts, KV),
+    (   member(nivel=NivelStr, KV) ->
+        atom_number(NivelStr, Nivel)
+    ;
+        format(user_error, 'error: --nivel es obligatorio en el subcomando plan~n'),
+        halt(1)
+    ),
+    (   member(hoy=Hoy, KV) ->
+        true
+    ;
+        format(user_error, 'error: --hoy es obligatorio en el subcomando plan~n'),
+        halt(1)
+    ),
+    opt_default(catalogo, KV, 'datos/catalogo.json', CatPath0),
+    opt_default(prerrequisitos, KV, 'datos/prerrequisitos.csv', PrePath0),
+    opt_default(historial, KV, 'datos/historial.csv', HisPath0),
+    opt_default(resueltos, KV, 'datos/resueltos.txt', ResPath0),
+    opt_default(disponibilidad, KV, 'datos/disponibilidad.csv', DispPath0),
+    opt_default(parametros, KV, 'config/parametros.pl', ParamPath0),
+    opt_default(dias, KV, none, DiasStr0),
+    resolve(CatPath0, CatPath),
+    resolve(PrePath0, PrePath),
+    resolve(HisPath0, HisPath),
+    resolve(ResPath0, ResPath),
+    resolve(DispPath0, DispPath),
+    resolve(ParamPath0, ParamPath),
+    (   exists_file(ParamPath) ->
+        consult(ParamPath)
+    ;
+        format(user_error, 'error: no se encuentra el archivo de parametros: ~s~n', [ParamPath]),
+        halt(1)
+    ),
+    (   DiasStr0 = none ->
+        dias_por_defecto(Dias)
+    ;
+        atom_number(DiasStr0, Dias)
+    ),
+    cargar_catalogo(CatPath, Cat),
+    leer_prerrequisitos(PrePath, Pares),
+    (   ciclo_prerrequisitos(Pares, Ciclo),
+        Ciclo \== [] ->
+        format(user_error, 'error: ciclo detectado en prerrequisitos: ~w~n', [Ciclo]),
+        halt(1)
+    ;   true
+    ),
+    leer_historial(HisPath, Intentos),
+    leer_resueltos_opcional(ResPath, Resueltos),
+    leer_disponibilidad(DispPath, DisponibilidadLista),
+    fechas_de_plan(Hoy, Dias, Fechas),
+    maplist(verificar_fecha_disponible(DisponibilidadLista), Fechas),
+    obtener_disponibles(Fechas, DisponibilidadLista, Disponibles),
+    veredictos_de_intentos(Intentos, Cat, _Veredictos),
+    temas_del_catalogo(Cat, TodosTemas),
+    maplist(tema_estado(Intentos, Cat), TodosTemas, Estados),
+    problemas_candidatos(Cat, Intentos, Resueltos, Pares, Estados, Nivel, Candidatos),
+    construir_plan(Dias, Fechas, Disponibles, Candidatos, PlanDias),
+    maplist(imprimir_dia(Cat, Estados), PlanDias),
+    halt(0).
+
+obtener_disponibles([], _, []).
+obtener_disponibles([Fecha|Fechas], Disponibilidad, [Minutos|Rest]) :-
+    minutos_de_fecha(Fecha, Disponibilidad, Minutos),
+    obtener_disponibles(Fechas, Disponibilidad, Rest).
+
+imprimir_dia(Cat, Estados, dia(Dia, Fecha, Disponible, Carga, Items)) :-
+    format('Día ~w (~s): ~w/~w minutos~n', [Dia, Fecha, Carga, Disponible]),
+    (   Items = [] ->
+        format('  (sin problemas)~n')
+    ;
+        maplist(imprimir_item(Cat, Estados), Items)
+    ).
+
+imprimir_item(Cat, Estados, candidato(Id, Rating, Minutos, _Temas, _Grupo)) :-
+    find_problema(Cat, Id, P),
+    problema_nombre(P, Nombre),
+    problema_enlace(P, Enlace),
+    motivo_de_item(Cat, Estados, Id, Motivo),
+    format('  ~s ~s ~w ~w ~s~n    ~s~n', [Id, Nombre, Rating, Minutos, Enlace, Motivo]).
+
+verificar_fecha_disponible(Disponibilidad, Fecha) :-
+    (   member(Fecha-_ , Disponibilidad) -> true
+    ;
+        format(user_error, 'error: fecha ~s no encontrada en el archivo de disponibilidad~n', [Fecha]),
+        halt(1)
+    ).
+
+motivo_de_item(Cat, Estados, Id, Motivo) :-
+    find_problema(Cat, Id, P),
+    problema_tags(P, Tags),
+    temas_ignorados_lista(Ignorados),
+    maplist(string_to_atom, Tags, TagsAtom),
+    maplist(string_to_atom, Ignorados, IgnoradosAtom),
+    include(tema_no_ignorado(IgnoradosAtom), TagsAtom, Temas),
+    sort(Temas, TemasOrd),
+    maplist(estado_de_tema(Estados), TemasOrd, EstadosTema),
+    pares_tema_estado(EstadosTema, Pares),
+    atomic_list_concat(Pares, ", ", ParesStr),
+    atom_concat("Temas: ", ParesStr, Motivo).
+
+estado_de_tema(Estados, Tema, estado(Tema, Estado)) :-
+    member(estado(Tema, Estado), Estados).
+
+pares_tema_estado([], []).
+pares_tema_estado([estado(Tema, Estado)|Rest], [Par|RestPares]) :-
+    atom_concat(Tema, "=", Par1),
+    atom_concat(Par1, Estado, Par),
+    pares_tema_estado(Rest, RestPares).
+
 
