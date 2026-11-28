@@ -81,7 +81,8 @@ list_min_max([H|T], MinAcc, MaxAcc, Min, Max) :-
 find_problema(Catalogo, Id, P) :-
     problemas_lista(Catalogo, Lista),
     member(P, Lista),
-    problema_id(P, Id).
+    problema_id(P, Id),
+    !.  % ids unicos: una sola solucion, sin choicepoints residuales
 
 % Límite de tiempo por rating con cobertura de huecos de la tabla.
 % Si el rating cae en alguna fila de limite_tiempo/3 se usa ese límite;

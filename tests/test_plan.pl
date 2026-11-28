@@ -103,7 +103,7 @@ test(solo_asigna_candidatos_validos) :-
     append(TodasIds, Todos),
     problemas_candidatos(Cat, Intentos, [], Pares, [], 1200, CandidatosValidos),
     maplist(id_de_item, CandidatosValidos, CandidatoIdsValidos),
-    maplist(member(CandidatoIdsValidos), Todos).
+    forall(member(Id, Todos), member(Id, CandidatoIdsValidos)).
 
 % ---- AC5: ningun candidato sin asignar cabe en el hueco de algun dia ----
 test(plan_no_deja_huecos_aprovechables) :-
@@ -116,10 +116,23 @@ test(plan_no_deja_huecos_aprovechables) :-
     length(Fechas, N),
     problemas_candidatos(Cat, Intentos, Resueltos, Pares, [], 1200, Candidatos),
     construir_plan(N, Fechas, Disponibles, Candidatos, PlanDias),
-    maplist(hueco_no_aprovechable, PlanDias, Disponibles).
-hueco_no_aprovechable(dia(_D, _F, Disponible, Carga, _I), Disponible) :-
-    Hueco is Disponible - Carga,
-    true.
+    ids_asignados(PlanDias, IdsAsignados),
+    exclude(es_asignado(IdsAsignados), Candidatos, NoAsignados),
+    % Ningun candidato sin asignar cabe en el hueco restante de ningun dia.
+    forall((member(candidato(_Id, _R, M, _T, _G), NoAsignados),
+            member(dia(_D, _F, Disponible, Carga, _Items), PlanDias)),
+           M > Disponible - Carga).
+
+ids_asignados(PlanDias, Ids) :-
+    maplist(items_ids, PlanDias, Listas),
+    append(Listas, Todos),
+    list_to_set(Todos, Ids).
+
+items_ids(dia(_D, _F, _Dis, _C, Items), Ids) :-
+    maplist(id_de_item, Items, Ids).
+
+es_asignado(IdsAsignados, candidato(Id, _R, _M, _T, _G)) :-
+    member(Id, IdsAsignados).
 
 % ---- AC6: dia de 120 recibe mas carga que el de 30, dia de 0 vacio ----
 test(dias_con_mas_tiempo_reciben_mas_carga) :-
